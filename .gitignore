@@ -1,3 +1,5 @@
 *.pyc
 Resources/thumbs_cache/*
 *.pyc
+
+*.pyc
