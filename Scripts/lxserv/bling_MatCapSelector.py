@@ -12,7 +12,7 @@
 # Description: Dyamically creates a popup list of available matcaps.
 #
 # Added view3d.shadingStyle advgl command when switching
-# 
+#
 ################################################################################
 
 import lx
@@ -34,6 +34,11 @@ TN_FOLDER = "thumbs_cache"
 MATCAP_NAME = "mecco_bling"
 TN_W = 32
 TN_H = 32
+
+created = False
+glob_CJ_MatcapList = ''
+selected_image = ''
+
 
 def getMatcapImage(matcapName):
     scene_svc = lx.service.Scene()
@@ -73,45 +78,55 @@ def GetTNImage(w, h, path=None, R=255.0, G=255.0, B=255.0, A=255.0):
 
 
 def findKitPath():
-    fileSrv = lx.service.File()
-    kitPath = fileSrv.ToLocalAlias("kit_%s:" % KIT_NAME)
-    
-    return kitPath
+    pltSrvc = lx.service.Platform()
+
+    paths = []
+
+    for i in range(pltSrvc.PathCount()):
+        paths.append(pltSrvc.PathByIndex(i))
+
+    for i in range(pltSrvc.ImportPathCount()):
+        paths.append(pltSrvc.ImportPathByIndex(i))
+
+    for path in paths:
+        try:
+            checkedPath = os.path.join(path, KIT_NAME)
+            if os.path.isdir(checkedPath):
+                return checkedPath
+        except:
+            pass
+
+    return None
+
 
 class imageCache():
-    imageCache = {}
+    imageCahce = {}
 
     def addImage(self, image, TN):
-        if not self.imageCache.has_key(image):
+        if not self.imageCahce.has_key(image):
             #lx.out('++ Adding Image: %s' % image)
             imgSrvc = lx.service.Image()
             im = imgSrvc.Load(TN)
-            self.imageCache[image] = im
+            self.imageCahce[image] = im
 
     def removeImage(self, image):
-        if self.imageCache.has_key(image):
+        if self.imageCahce.has_key(image):
             #lx.out('-- Removing Image: %s' % image)
-            del self.imageCache[image]
+            del self.imageCahce[image]
 
-    def GetImageTN(self, image):
-        if self.imageCache.has_key(image):
-            return self.imageCache[image]
+    def GetImageTN(self, index):
+        if self.imageCahce.has_key(index):
+            return self.imageCahce[index]
         else:
             return
 
 
 class CJ_MatcapList(lxifc.UIValueHints):
-    
-    _list = []
-    _imagePaths = []
-    imageCache = imageCache()
-    _selected = ""
-    
     def __init__(self):
+        self._imagePaths = []
+        self.imageCahce = imageCache()
+        self._list = self.getMatcapList()
         self._notifiers = [('select.event', 'item +vdlt')]
-        
-        if not self._list:
-            self.getMatcapList()
 
     def uiv_Flags(self):
         return lx.symbol.fVALHINT_POPUPS
@@ -127,36 +142,23 @@ class CJ_MatcapList(lxifc.UIValueHints):
 
     def uiv_PopIconSize(self):
         return (TN_W, TN_W, TN_H)
-    
-    def uiv_PopFlags(self,index):
-        if self._imagePaths[index] == self._selected:
-            return lx.symbol.fPOPFLAGS_SELECTED
-        else:
-            return 0
 
     def uiv_PopIconImage(self, index):
-        return self.imageCache.GetImageTN(self._imagePaths[index])
+        return self.imageCahce.GetImageTN(self._imagePaths[index])
+
+    #return GetTNImage(self._imagePaths[index],TN_W,TN_H)
 
     def uiv_NotifierCount(self):
         return len(self._notifiers)
 
     def uiv_NotifierByIndex(self, index):
         return self._notifiers[index]
-    
-    @classmethod
-    def setSelected(cls,val=""):
-        cls._selected = val
-        
-    @classmethod
-    def getSelected(cls):
-        return cls._selected
-    
-    @classmethod
-    def getMatcapList(cls):
+
+    def getMatcapList(self):
         kitPath = findKitPath()
 
-        cls._list = []
-        cls._imagePaths = []
+        names = []
+        self._imagePaths = []
         if kitPath != None:
             images = glob.glob(os.path.join(kitPath, ASSETS_FOLDER, IMAGE_FOLDER, MATCAP_FOLDER, "%s*" % MATCAP_PREFIX))
 
@@ -185,28 +187,29 @@ class CJ_MatcapList(lxifc.UIValueHints):
                     tnMod = float(os.path.basename(Existing_TN[0]).split('_')[0])
                     if modTime > tnMod:
                         os.remove(Existing_TN[0])
-                        cls.imageCache.removeImage(image)
-                        cls.makeTN(image, Full_TN_Path)
+                        self.imageCahce.removeImage(image)
+                        self.makeTN(image, Full_TN_Path)
 
                     else:
                         Full_TN_Path = Existing_TN[0][:-4]
                 else:
-                    cls.makeTN(image, Full_TN_Path)
+                    self.makeTN(image, Full_TN_Path)
 
-                cls._imagePaths.append(image)
-                cls._list.append(cleanFileName)
+                self._imagePaths.append(image)
+                names.append(cleanFileName)
 
-                cls.imageCache.addImage(image, "%s.png" % Full_TN_Path)
+                self.imageCahce.addImage(image, "%s.png" % Full_TN_Path)
 
-        cls._list.append('(none)')
-        cls._list.append('Open Matcaps Folder')
-        cls._list.append('Update Images')
-        cls._imagePaths.append('(none)')
-        cls._imagePaths.append('openFolder')
-        cls._imagePaths.append('updateImages')
+        names.append('(none)')
+        names.append('Open Matcaps Folder')
+        names.append('Update Images')
+        self._imagePaths.append('(none)')
+        self._imagePaths.append('openFolder')
+        self._imagePaths.append('updateImages')
+        return names
 
-    @staticmethod
-    def makeTN(image, Full_TN_Path):
+    def makeTN(self, image, Full_TN_Path):
+        #lx.out('TN dest path: '+Full_TN_Path)
         imgSrvc = lx.service.Image()
         tnObj = GetTNImage(TN_W, TN_H, image, A=0)
         imgSrvc.Save(tnObj, "%s.png" % Full_TN_Path, "PNG", None)
@@ -218,9 +221,18 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
         lxu.command.BasicCommand.__init__(self)
         self.dyna_Add('image', lx.symbol.sTYPE_STRING)
         self.basic_SetFlags(0, lx.symbol.fCMDARG_QUERY)
+        self.imageCache = imageCache()
+
+        global created
+        global glob_CJ_MatcapList
+
+        if not created:
+            created = True
+            glob_CJ_MatcapList = CJ_MatcapList()
+        self.matcap_list = glob_CJ_MatcapList
 
     def arg_UIValueHints(self, index):
-        return CJ_MatcapList()
+        return self.matcap_list
 
     def basic_ButtonName(self):
         return "Matcap"
@@ -229,9 +241,9 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
         try:
             self.CMD_EXE(msg, flags)
         except Exception:
-            msg.SetCode(lx.result.FAILED)
-            msg.SetMessage('common', None, 99)
-            msg.SetArgumentString(1,traceback.format_exc())
+            #lx.out(traceback.format_exc())
+            lx.eval(
+                'layout.createOrClose EventLog "Event Log_layout" title:@macros.layouts@EventLog@ width:600 height:600 persistent:true open:true')
 
     def CMD_EXE(self, msg, flags):
 
@@ -239,23 +251,26 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
         scnSel = lxu.select.SceneSelection().current()
         render = self.lookUP('Render')
         scnSrv = lx.service.Scene()
-        matCapList = CJ_MatcapList()
+
+        global created
+        global selected_image
 
         if image == "(none)":
             self.removeMatCap()
-            matCapList.setSelected()
 
-        elif image == "openFolder":
+        if image == "openFolder":
             lx.eval('file.open {%s}' % os.path.join(findKitPath(), ASSETS_FOLDER, IMAGE_FOLDER, MATCAP_FOLDER))
 
-        elif image == "updateImages":
-            self.removeMatCap()
-            matCapList.getMatcapList()
-            image = matCapList.getSelected()
+        if image == "updateImages":
+            created = False
+            if not os.path.isfile(selected_image):
+                self.removeMatCap()
 
-        if os.path.isfile(image):
+        if os.path.isfile(image) or not created and os.path.isfile(selected_image):
             self.removeMatCap()
-            matCapList.setSelected(image)
+
+            if created:
+                selected_image = image
 
             matCapObj = scnSel.ItemAdd(scnSrv.ItemTypeLookup('matcapShader'))
             matCapObj.SetName(MATCAP_NAME)
@@ -265,10 +280,10 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
             childrenCount = itemGraph.RevCount(render)
             itemGraph.SetLink(matCapObj, -1, render, -1)
 
-            lx.eval('clip.addStill {%s}' % image)
+            lx.eval('clip.addStill {%s}' % selected_image)
             lx.eval('item.channel videoStill$colorspace "nuke-default:sRGB"')
             lx.eval('select.item {%s} set' % matCapObj.Ident())
-            imageName = os.path.basename(image)
+            imageName = os.path.basename(selected_image)
             lx.eval('matcap.image {%s:videoStill001}' % imageName[:imageName.rfind('.')])
 
             self.writeChannel(matCapObj, 'glOnly', 1)
@@ -326,5 +341,6 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
 
     def basic_Enable(self, msg):
         return True
+
 
 lx.bless(mecco_cmd_bling, "mecco.bling")
