@@ -223,10 +223,11 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
         self.basic_SetFlags(0, lx.symbol.fCMDARG_QUERY)
         self.imageCache = imageCache()
 
+        global created
+        global glob_CJ_MatcapList
+
         if not created:
-            global created
             created = True
-            global glob_CJ_MatcapList
             glob_CJ_MatcapList = CJ_MatcapList()
         self.matcap_list = glob_CJ_MatcapList
 
@@ -251,6 +252,9 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
         render = self.lookUP('Render')
         scnSrv = lx.service.Scene()
 
+        global created
+        global selected_image
+
         if image == "(none)":
             self.removeMatCap()
 
@@ -258,7 +262,6 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
             lx.eval('file.open {%s}' % os.path.join(findKitPath(), ASSETS_FOLDER, IMAGE_FOLDER, MATCAP_FOLDER))
 
         if image == "updateImages":
-            global created
             created = False
             if not os.path.isfile(selected_image):
                 self.removeMatCap()
@@ -267,7 +270,6 @@ class mecco_cmd_bling(lxu.command.BasicCommand):
             self.removeMatCap()
 
             if created:
-                global selected_image
                 selected_image = image
 
             matCapObj = scnSel.ItemAdd(scnSrv.ItemTypeLookup('matcapShader'))
