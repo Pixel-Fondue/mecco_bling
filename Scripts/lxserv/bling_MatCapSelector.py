@@ -12,7 +12,7 @@
 # Description: Dyamically creates a popup list of available matcaps.
 #
 # Added view3d.shadingStyle advgl command when switching
-# 
+#
 ################################################################################
 
 import lx
