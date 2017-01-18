@@ -1,7 +1,7 @@
 import lx, lxifc, glob, os, re
 from var import *
-from getTNImage import *
-from imageCache import *
+from GetTNImage import *
+from ImageCache import *
 
 class MatcapListPop(lxifc.UIValueHints):
 

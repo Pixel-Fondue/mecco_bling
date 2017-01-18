@@ -1,6 +1,7 @@
 # python
 
 import lx
+from var import *
 
 def GetTNImage(w, h, path=None, R=255.0, G=255.0, B=255.0, A=255.0):
     imgSrvc = lx.service.Image()
