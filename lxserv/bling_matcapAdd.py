@@ -6,6 +6,8 @@ CMD_NAME = "bling.matcapAdd"
 
 class CommandClass(bling.CommanderClass):
     _commander_default_values = []
+    _icon = None
+    _imageCache = bling.imageCache()
 
     def commander_arguments(self):
         return [
@@ -18,6 +20,12 @@ class CommandClass(bling.CommanderClass):
                 'flags': ['query']
             }
         ]
+
+    def cmd_IconImage(self, w, h):
+        image_path = self.commander_arg_value(0)
+        if image_path:
+            TN = self._imageCache.GetImageTN(image_path)
+            return TN
 
     def commander_execute(self, msg, flags):
         image = self.commander_arg_value(0)

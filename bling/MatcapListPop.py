@@ -67,8 +67,7 @@ class MatcapListPop(lxifc.UIValueHints):
             else:
                 images = [os.path.join(matcap_folder(), element) for element in os.listdir(matcap_folder())]
 
-            images = [image for image in images if
-                      os.path.isfile(image) and re.search('([^\\s]+(\\.(?i)(jpg|png|psd|exr|tga))$)', image.lower())]
+            images = [image for image in images if os.path.isfile(image) and re.search('([^\\s]+(\\.(?i)(jpg|png|psd|exr|tga))$)', image.lower())]
 
             if not os.path.isdir(TN_FOLDER):
                 os.mkdir(TN_FOLDER)
